@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>context.log — IDE Layout Prototype</title>
+<script>
+// Tailwind CDN, but we use custom CSS primarily
+const tailwind = document.createElement('script');
+tailwind.src = 'https://cdn.tailwindcss.com';
+document.head.appendChild(tailwind);
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   context.log — IDE Layout Prototype
+   Variant A: VSCode Classic (polished)
+   ═══════════════════════════════════════════ */
+
+:root {
+  --accent-h: 18;
+  --accent-s: 65%;
+  --accent-l: 48%;
+  --accent: hsl(var(--accent-h), var(--accent-s), var(--accent-l));
+  --accent-dim: hsl(var(--accent-h), var(--accent-s), 38%);
+  --accent-glow: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.25);
+  --accent-glow-strong: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.45);
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
+  --title-h: 40px;
+  --activity-w: 48px;
+  --sidebar-w: 272px;
+  --status-h: 26px;
+  --tab-h: 36px;
+  --breadcrumb-h: 28px;
+  --terminal-h: 200px;
+}
+
+/* Dark theme (default) */
+[data-theme="dark"] {
+  --chrome-bg: #0A0A0A;
+  --chrome-bg-alt: #111111;
+  --sidebar-bg: #121212;
+  --sidebar-hover: rgba(255,255,255,0.04);
+  --sidebar-active: rgba(200,74,46,0.1);
+  --doc-bg: #000000;
+  --tab-active-bg: #000000;
+  --tab-inactive-bg: #0A0A0A;
+  --ink: #E8DFD0;
+  --ink-dim: #8A8580;
+  --ink-muted: #555250;
+  --ink-faint: #3A3836;
+  --border: #1C1C1C;
+  --border-light: #282828;
+  --surface: #161616;
+  --surface-hover: #1E1E1E;
+  --search-bg: #181818;
+  --scrollbar-bg: transparent;
+  --scrollbar-thumb: #2A2A2A;
+  --scrollbar-thumb-hover: #444;
+  --progress-bg: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.25);
+  --tooltip-bg: #1C1C1C;
+  --glow-color: var(--accent-glow);
+  --terminal-bg: #000000;
+  --terminal-header-bg: #060606;
+  --terminal-header-text: var(--ink-muted);
+  --terminal-text: #E8DFD0;
+  --terminal-accent: #D9854A;
+  --terminal-accent-glow: rgba(217,133,74,0.25);
+  --terminal-dim: #8A7A6A;
+  --scanline-color: rgba(200,74,46,0.015);
+}
+[data-theme="light"] {
+  --accent: #B5652B;
+  --accent-dim: #8F4E1F;
+  --accent-glow: rgba(181,101,43,0.2);
+  --chrome-bg: #EDE8DA;
+  --chrome-bg-alt: #D8CFB6;
+  --sidebar-bg: #EDE8DA;
+  --sidebar-hover: rgba(0,0,0,0.04);
+  --sidebar-active: #D8CFB6;
+  --doc-bg: #E1DAC6;
+  --tab-active-bg: #E1DAC6;
+  --tab-inactive-bg: #EDE8DA;
+  --ink: #332D22;
+  --ink-dim: #4A4233;
+  --ink-muted: #8A8066;
+  --ink-faint: #AEA48E;
+  --border: #CFC6AC;
+  --border-light: #DED6C0;
+  --surface: #EDE8DA;
+  --surface-hover: #D8CFB6;
+  --search-bg: #EDE8DA;
+  --scrollbar-bg: transparent;
+  --scrollbar-thumb: #CFC6AC;
+  --scrollbar-thumb-hover: #BFB59C;
+  --progress-bg: rgba(181,101,43,0.12);
+  --tooltip-bg: #332D22;
+  --glow-color: rgba(181,101,43,0.10);
+  --terminal-bg: #FFFFFF;
+  --terminal-header-bg: #F0ECE0;
+  --terminal-header-text: var(--ink-muted);
+  --terminal-text: #2D281E;
+  --terminal-accent: #D9854A;
+  --terminal-accent-glow: rgba(217,133,74,0.12);
+  --terminal-dim: #A09888;
+  --scanline-color: rgba(0,0,0,0.025);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: Inter, system-ui, sans-serif; overflow: hidden; background: var(--chrome-bg); color: var(--ink); height: 100vh; width: 100vw; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-bg); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
+
+/* ═══════════ LAYOUT ═══════════ */
+.app { display: flex; flex-direction: column; height: 100vh; }
+.app .main { display: flex; flex: 1; overflow: hidden; }
+.app .content-col { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+/* ═══════════ TITLE BAR ═══════════ */
+.title-bar { height: var(--title-h); display: flex; align-items: center; padding: 0 14px; background: var(--chrome-bg); border-bottom: 1px solid var(--border); flex-shrink: 0; gap: 14px; user-select: none; -webkit-app-region: drag; }
+.title-dots { display: flex; gap: 8px; align-items: center; -webkit-app-region: no-drag; }
+.title-dot { width: 13px; height: 13px; border-radius: 50%; transition: filter 0.15s var(--ease-out); }
+.title-dot:hover { filter: brightness(1.3); }
+.title-dot.red { background: #FF5F56; }
+.title-dot.yellow { background: #FFBD2E; }
+.title-dot.green { background: #27C93F; }
+.title-label { color: var(--ink-dim); font-size: 12px; font-weight: 500; flex: 1; text-align: center; letter-spacing: 0.01em; -webkit-app-region: no-drag; }
+.title-label span { color: var(--ink-muted); }
+.title-search { display: flex; align-items: center; gap: 6px; color: var(--ink-muted); font-size: 12px; padding: 5px 12px; background: var(--search-bg); border: 1px solid var(--border); border-radius: 5px; cursor: pointer; transition: border-color 0.15s var(--ease-out), background 0.15s var(--ease-out); -webkit-app-region: no-drag; }
+.title-search:hover { border-color: var(--ink-faint); background: var(--surface-hover); }
+.title-search .kbd { font-family: JetBrains Mono, monospace; font-size: 10px; color: var(--ink-faint); background: var(--chrome-bg); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--border); margin-left: 4px; }
+
+/* ═══════════ ACTIVITY BAR ═══════════ */
+.activity-bar { width: var(--activity-w); background: var(--chrome-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; padding: 8px 0; flex-shrink: 0; gap: 2px; }
+.activity-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; color: var(--ink-muted); font-size: 18px; position: relative; transition: color 0.15s var(--ease-out), background 0.15s var(--ease-out), transform 0.1s var(--ease-out); }
+.activity-icon:hover { color: var(--ink); background: var(--sidebar-hover); transform: scale(1.05); }
+.activity-icon:active { transform: scale(0.93); }
+.activity-icon.active { color: var(--accent); }
+.activity-icon.active::before { content: ''; position: absolute; left: 2px; top: 6px; bottom: 6px; width: 2px; background: var(--accent); border-radius: 2px; }
+.activity-icon .badge { position: absolute; top: 3px; right: 3px; width: 8px; height: 8px; background: var(--accent); border-radius: 50%; border: 2px solid var(--chrome-bg); }
+.activity-spacer { flex: 1; }
+
+/* ═══════════ SIDEBAR ═══════════ */
+.sidebar { width: var(--sidebar-w); background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; }
+.sidebar-header { padding: 8px 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--ink-muted); border-bottom: 1px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; }
+.sidebar-header .actions { display: flex; gap: 4px; }
+.sidebar-header .actions span { font-size: 16px; cursor: pointer; padding: 2px 4px; border-radius: 4px; transition: color 0.15s var(--ease-out), background 0.15s var(--ease-out); color: var(--ink-muted); line-height: 1; }
+.sidebar-header .actions span:hover { color: var(--ink); background: var(--sidebar-hover); }
+.sidebar-tree { padding: 4px 0; overflow-y: auto; flex: 1; font-size: 13px; }
+.tree-folder { user-select: none; }
+.tree-folder-header { display: flex; align-items: center; gap: 6px; padding: 5px 16px; cursor: pointer; color: var(--ink-dim); transition: color 0.1s var(--ease-out), background 0.1s var(--ease-out); }
+.tree-folder-header:hover { color: var(--ink); background: var(--sidebar-hover); }
+.tree-folder-header .arrow { font-size: 9px; width: 16px; text-align: center; flex-shrink: 0; transition: transform 0.2s var(--ease-out); opacity: 0.6; }
+.tree-folder-header .arrow.open { transform: rotate(90deg); }
+.tree-folder-header .folder-icon { flex-shrink: 0; font-size: 14px; }
+.tree-folder-contents { }
+.tree-file { display: flex; align-items: center; gap: 8px; padding: 5px 16px 5px 46px; cursor: pointer; color: var(--ink-dim); font-size: 13px; transition: color 0.1s var(--ease-out), background 0.1s var(--ease-out), border-color 0.15s var(--ease-out); border-left: 2px solid transparent; }
+.tree-file:hover { color: var(--ink); background: var(--sidebar-hover); }
+.tree-file.active { color: var(--ink); border-left-color: var(--accent); background: var(--sidebar-active); }
+.tree-file .file-icon { font-size: 14px; width: 16px; text-align: center; flex-shrink: 0; }
+.tree-file .file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ═══════════ TAB BAR ═══════════ */
+.tab-bar { height: var(--tab-h); display: flex; align-items: center; background: var(--chrome-bg-alt); border-bottom: 1px solid var(--border); padding: 0 6px; flex-shrink: 0; gap: 0; }
+.tab-item { display: flex; align-items: center; gap: 8px; padding: 0 20px; height: 100%; font-size: 12px; color: var(--ink-dim); cursor: pointer; transition: color 0.15s var(--ease-out), background 0.15s var(--ease-out); position: relative; border-right: 1px solid var(--border); min-width: 0; }
+.tab-item:hover { color: var(--ink); background: var(--surface-hover); }
+.tab-item.active { color: var(--ink); background: var(--tab-active-bg); }
+.tab-item.active::after { content: ''; position: absolute; bottom: 0; left: 8px; right: 8px; height: 1.5px; background: var(--accent); border-radius: 1px; }
+.tab-item .icon { font-size: 14px; flex-shrink: 0; }
+.tab-item .close { font-size: 12px; opacity: 0; margin-left: 4px; transition: opacity 0.15s var(--ease-out); padding: 1px; border-radius: 3px; }
+.tab-item:hover .close { opacity: 0.4; }
+.tab-item .close:hover { opacity: 1; background: var(--sidebar-hover); }
+
+/* ═══════════ BREADCRUMBS ═══════════ */
+.breadcrumbs { height: var(--breadcrumb-h); display: flex; align-items: center; padding: 0 24px; font-size: 12px; color: var(--ink-dim); border-bottom: 1px solid var(--border); flex-shrink: 0; gap: 2px; }
+.breadcrumb-sep { color: var(--ink-faint); margin: 0 4px; font-size: 14px; }
+.breadcrumb-item { cursor: pointer; padding: 2px 4px; border-radius: 3px; transition: color 0.15s var(--ease-out), background 0.15s var(--ease-out); }
+.breadcrumb-item:hover { color: var(--ink); background: var(--sidebar-hover); }
+.breadcrumb-item.current { color: var(--ink); }
+.lang-toggle { margin-left: auto; display: flex; gap: 6px; align-items: center; font-family: JetBrains Mono, monospace; font-size: 11px; }
+.lang-toggle span { cursor: pointer; padding: 2px 6px; border-radius: 3px; transition: all 0.15s var(--ease-out); opacity: 0.4; }
+.lang-toggle span.active { opacity: 1; color: var(--accent); background: var(--sidebar-active); }
+.lang-toggle span:not(.active):hover { opacity: 0.7; }
+
+/* ═══════════ DOCUMENT AREA ═══════════ */
+.document-area { flex: 1; overflow-y: auto; background: var(--doc-bg); position: relative; }
+.document-content { max-width: 740px; margin: 0 auto; padding: 56px 40px 160px; }
+.doc-frontmatter { margin-bottom: 40px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; transition: border-color 0.2s var(--ease-out); }
+.doc-frontmatter:hover { border-color: var(--border-light); }
+.doc-fm-header { display: flex; align-items: center; gap: 8px; padding: 10px 16px; cursor: pointer; font-family: JetBrains Mono, monospace; font-size: 12px; color: var(--ink-dim); transition: background 0.15s var(--ease-out); }
+.doc-fm-header:hover { background: var(--sidebar-hover); }
+.doc-fm-header .arrow { font-size: 10px; transition: transform 0.2s var(--ease-out); }
+.doc-fm-header .arrow.open { transform: rotate(90deg); }
+.doc-fm-body { padding: 0 16px 16px; font-family: JetBrains Mono, monospace; font-size: 12px; line-height: 1.8; color: var(--ink-dim); overflow: hidden; transition: max-height 0.3s var(--ease-out); }
+.doc-fm-body .key { color: var(--accent); }
+.doc-fm-body .value { color: var(--ink-dim); }
+.doc-fm-body .string { color: #5B8A6A; }
+
+.doc-hero-icon { width: 52px; height: 52px; margin-bottom: 28px; perspective: 600px; }
+.doc-hero-icon .shape-3d { width: 100%; height: 100%; transform-style: preserve-3d; animation: spin3d 12s linear infinite; }
+.doc-hero-icon .shape-3d .face { position: absolute; width: 100%; height: 100%; border-radius: 14px; background: linear-gradient(135deg, var(--accent), hsl(var(--accent-h), var(--accent-s), 58%)); opacity: 0.85; }
+.doc-hero-icon .shape-3d .face:nth-child(1) { transform: rotateX(0deg) translateZ(26px); }
+.doc-hero-icon .shape-3d .face:nth-child(2) { transform: rotateX(180deg) translateZ(26px); }
+.doc-hero-icon .shape-3d .face:nth-child(3) { transform: rotateY(90deg) translateZ(26px); }
+.doc-hero-icon .shape-3d .face:nth-child(4) { transform: rotateY(-90deg) translateZ(26px); }
+.doc-hero-icon .shape-3d .face:nth-child(5) { transform: rotateX(90deg) translateZ(26px); }
+.doc-hero-icon .shape-3d .face:nth-child(6) { transform: rotateX(-90deg) translateZ(26px); }
+@keyframes spin3d { to { transform: rotateY(360deg) rotateX(10deg); } }
+
+.doc-title { font-family: 'EB Garamond', Georgia, 'Times New Roman', serif; font-size: 44px; font-weight: 600; line-height: 1.15; letter-spacing: -0.01em; margin-bottom: 16px; color: var(--ink); text-wrap: pretty; }
+.doc-excerpt { font-family: 'EB Garamond', Georgia, serif; font-size: 20px; font-weight: 400; line-height: 1.6; color: var(--ink-dim); margin-bottom: 28px; font-style: italic; }
+.doc-meta { display: flex; gap: 16px; font-size: 12px; color: var(--ink-muted); flex-wrap: wrap; align-items: center; margin-bottom: 48px; padding-bottom: 32px; border-bottom: 1px solid var(--border); }
+.doc-meta-sep { width: 3px; height: 3px; background: var(--ink-faint); border-radius: 50%; }
+.doc-tag { padding: 2px 10px; background: var(--sidebar-active); border-radius: 4px; color: var(--accent); font-family: JetBrains Mono, monospace; font-size: 11px; cursor: pointer; transition: background 0.15s var(--ease-out); }
+.doc-tag:hover { background: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.15); }
+
+.doc-body { font-family: 'EB Garamond', Georgia, 'Times New Roman', serif; font-size: 19px; line-height: 1.75; color: var(--ink); }
+.doc-body h2 { font-size: 30px; font-weight: 600; margin: 48px 0 16px; line-height: 1.25; letter-spacing: -0.01em; }
+.doc-body h3 { font-size: 24px; font-weight: 600; margin: 36px 0 12px; line-height: 1.3; }
+.doc-body p { margin-bottom: 20px; }
+.doc-body p:last-of-type { margin-bottom: 0; }
+.doc-body code { font-family: JetBrains Mono, monospace; font-size: 15px; letter-spacing: -0.01em; background: var(--sidebar-bg); padding: 2px 7px; border-radius: 4px; border: 1px solid var(--border); }
+.doc-body pre { background: #0A0A0A; border: 1px solid var(--border); border-radius: 8px; padding: 20px 24px; margin: 24px 0; overflow-x: auto; position: relative; }
+.doc-body pre code { background: none; border: 0; padding: 0; font-size: 13px; line-height: 1.65; color: #C9D1D9; }
+.doc-body blockquote { border-left: 2px solid var(--accent); padding: 16px 24px; margin: 28px 0; background: var(--sidebar-bg); border-radius: 0 8px 8px 0; font-style: italic; color: var(--ink-dim); font-size: 18px; }
+
+/* BenchmarkCard */
+.benchmark-card { display: flex; gap: 28px; margin: 36px 0; background: var(--sidebar-bg); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; transition: transform 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out); perspective: 800px; }
+.benchmark-card:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+.benchmark-card .image { flex: 1; min-height: 200px; background: linear-gradient(135deg, #1A1A2E, #16213E); display: flex; align-items: center; justify-content: center; color: var(--ink-muted); font-family: JetBrains Mono, monospace; font-size: 12px; position: relative; overflow: hidden; }
+.benchmark-card .image .chart { position: relative; width: 80%; height: 60%; display: flex; align-items: flex-end; gap: 8px; padding: 12px; }
+.benchmark-card .image .bar { flex: 1; border-radius: 3px 3px 0 0; min-height: 4px; transition: height 0.6s var(--ease-out); position: relative; }
+.benchmark-card .content { flex: 1; padding: 24px; display: flex; flex-direction: column; justify-content: center; }
+.benchmark-card .content p { font-size: 16px; margin: 0; line-height: 1.7; }
+.benchmark-card .content .label { font-family: Inter, sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-muted); margin-bottom: 8px; }
+
+/* VerdictBox */
+.verdict-box { margin: 36px 0; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out); }
+.verdict-box:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+.verdict-box .header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; font-weight: 600; font-size: 13px; font-family: Inter, sans-serif; }
+.verdict-box .body { padding: 0 20px 20px; font-size: 16px; line-height: 1.7; font-family: 'EB Garamond', Georgia, serif; }
+.verdict-box .stamp { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.verdict-box.positive { border-color: var(--accent); }
+.verdict-box.positive .header { background: var(--sidebar-active); color: var(--accent); }
+.verdict-box.positive .stamp { background: var(--accent); color: #fff; }
+.verdict-box.mixed { border-color: #B8860B; }
+.verdict-box.mixed .header { background: rgba(184,134,11,0.1); color: #D4A017; }
+.verdict-box.mixed .stamp { background: #B8860B; color: #fff; }
+.verdict-box.negative { border-color: #A02020; }
+.verdict-box.negative .header { background: rgba(160,32,32,0.1); color: #D04040; }
+.verdict-box.negative .stamp { background: #A02020; color: #fff; }
+
+/* ═══════════ TERMINAL ═══════════ */
+.terminal-panel { height: var(--terminal-h); background: var(--terminal-bg); color: var(--terminal-text); border-top: 1px solid var(--border); display: flex; flex-direction: column; font-family: JetBrains Mono, monospace; font-size: 13px; overflow: hidden; flex-shrink: 0; position: relative; }
+.terminal-panel::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, var(--scanline-color, transparent) 2px, var(--scanline-color, transparent) 4px); pointer-events: none; z-index: 1; }
+.terminal-header { display: flex; align-items: center; justify-content: space-between; padding: 5px 16px; border-bottom: 1px solid var(--border); font-size: 11px; color: var(--terminal-header-text); flex-shrink: 0; background: var(--terminal-header-bg); }
+.terminal-tabs { display: flex; gap: 12px; }
+.terminal-tab { color: var(--terminal-header-text); cursor: pointer; padding: 2px 4px; transition: color 0.15s var(--ease-out); position: relative; }
+.terminal-tab.active { color: var(--terminal-text); }
+.terminal-tab.active::after { content: ''; position: absolute; bottom: -5px; left: 4px; right: 4px; height: 1px; background: var(--accent); }
+.terminal-actions { display: flex; gap: 8px; color: var(--terminal-header-text); }
+.terminal-actions span { cursor: pointer; opacity: 0.3; transition: opacity 0.15s var(--ease-out); }
+.terminal-actions span:hover { opacity: 0.7; }
+.terminal-body { padding: 8px 16px 12px; overflow-y: auto; flex: 1; position: relative; z-index: 0; }
+.terminal-line { margin-bottom: 3px; white-space: pre-wrap; word-break: break-all; animation: termFadeIn 0.1s var(--ease-out); }
+@keyframes termFadeIn { from { opacity: 0; } to { opacity: 1; } }
+.terminal-line.dim { color: var(--terminal-dim); }
+.terminal-line.output { color: var(--terminal-text); }
+.terminal-line .highlight { color: var(--terminal-accent, var(--accent)); }
+.terminal-line .highlight-dim { color: hsl(var(--accent-h), var(--accent-s), 38%); }
+.terminal-line .dir { color: #5899D4; }
+.terminal-line.prompt { color: var(--terminal-accent, var(--accent)); text-shadow: 0 0 12px var(--terminal-accent-glow, var(--accent-glow)); }
+.terminal-line .path { color: hsl(var(--accent-h), var(--accent-s), 55%); }
+
+.terminal-line.typewriter { overflow: hidden; white-space: nowrap; width: fit-content; max-width: 100%; }
+.terminal-line.typewriter::after { content: ''; display: inline-block; width: 7px; height: 15px; background: var(--terminal-accent, var(--accent)); margin-left: 4px; vertical-align: text-bottom; animation: cursorBlink 0.9s step-end infinite; box-shadow: 0 0 6px var(--terminal-accent-glow, var(--accent-glow)); }
+@keyframes cursorBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+.terminal-input-line { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.terminal-input-line .prompt-text { color: var(--terminal-accent, var(--accent)); text-shadow: 0 0 8px var(--terminal-accent-glow, var(--accent-glow)); }
+.terminal-input-line .cursor { display: inline-block; width: 8px; height: 16px; background: var(--terminal-accent, var(--accent)); box-shadow: 0 0 6px var(--terminal-accent-glow, var(--accent-glow)); animation: cursorPulse 1s step-end infinite; }
+@keyframes cursorPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+/* ═══════════ STATUS BAR ═══════════ */
+.status-bar { height: var(--status-h); display: flex; align-items: center; padding: 0 14px; background: var(--chrome-bg); border-top: 1px solid var(--border); font-size: 11px; color: var(--ink-muted); flex-shrink: 0; gap: 0; position: relative; }
+.status-bar .progress { position: absolute; top: -1px; left: 0; height: 1.5px; background: linear-gradient(90deg, var(--accent), hsl(var(--accent-h), var(--accent-s), 58%)); transition: width 0.4s var(--ease-out); border-radius: 1px; }
+.status-section { display: flex; align-items: center; gap: 5px; padding: 0 8px; height: 100%; border-right: 1px solid var(--border); }
+.status-section:first-child { padding-left: 0; }
+.status-section:last-child { border-right: 0; }
+.status-section .icon { font-size: 11px; }
+.status-clickable { cursor: pointer; padding: 0 4px; height: 100%; display: flex; align-items: center; transition: color 0.15s var(--ease-out), background 0.15s var(--ease-out); }
+.status-clickable:hover { color: var(--ink); background: var(--sidebar-hover); }
+.status-spacer { flex: 1; }
+
+/* ═══════════ PROTOTYPE SWITCHER ═══════════ */
+.prototype-switcher { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; align-items: center; gap: 10px; background: #1A1A1A; border: 1px solid #333; border-radius: 10px; padding: 8px 18px; font-family: JetBrains Mono, monospace; font-size: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.6); backdrop-filter: blur(8px); }
+.prototype-switcher button { background: none; border: 0; color: #666; cursor: pointer; font-size: 16px; padding: 2px 8px; border-radius: 5px; transition: all 0.15s var(--ease-out); }
+.prototype-switcher button:hover { color: #fff; background: #333; }
+.prototype-switcher .label { color: #999; min-width: 180px; text-align: center; }
+.prototype-switcher .badge { background: var(--accent); color: #fff; font-size: 9px; letter-spacing: 0.5px; padding: 2px 7px; border-radius: 4px; margin-left: 8px; font-weight: 600; }
+.prototype-switcher .sep { width: 1px; height: 22px; background: #333; margin: 0 4px; }
+[data-theme="light"] .prototype-switcher { background: #E8E6E1; border-color: #D4D0C8; }
+[data-theme="light"] .prototype-switcher button { color: #999; }
+[data-theme="light"] .prototype-switcher button:hover { color: #333; background: #D4D0C8; }
+
+/* ═══════════ RESPONSIVE ═══════════ */
+@media (max-width: 768px) {
+  :root { --activity-w: 0; --sidebar-w: 0; --terminal-h: 160px; }
+  .activity-bar { display: none; }
+  .sidebar { display: none; }
+  .document-content { padding: 32px 20px 100px; }
+  .doc-title { font-size: 32px; }
+  .benchmark-card { flex-direction: column; }
+  .benchmark-card .image { min-height: 160px; }
+  .title-search { display: none; }
+  .breadcrumbs { padding: 0 16px; font-size: 11px; }
+  .breadcrumb-item:nth-child(-n+3) { display: none; }
+  .status-section:nth-child(3), .status-section:nth-child(4) { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  .doc-hero-icon .shape-3d { animation: none; }
+  .terminal-line.typewriter { white-space: normal; }
+  .terminal-line.typewriter::after { display: none; }
+  .terminal-panel::before { display: none; }
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// context.log — IDE Layout Prototype
+// ═══════════════════════════════════════════════════
+
+const DATA = {
+  categories: [
+    { name: 'frontier-models', label: 'Frontier Models', icon: '◇', files: ['comparando-gpt5-vs-claude-opus.mdx'] },
+    { name: 'chinese-models', label: 'Modelos Chineses', icon: '○', files: ['deepseek-v4-vale-a-pena.mdx'] },
+    { name: 'benchmarks', label: 'Benchmarks', icon: '⬡', files: [] },
+    { name: 'cost-performance', label: 'Custo & Performance', icon: '⬠', files: [] },
+    { name: 'tools-agents', label: 'Ferramentas & Agentes', icon: '□', files: ['usando-agentes-para-testes.mdx'] },
+  ],
+  post: {
+    category: 'frontier-models',
+    slug: 'comparando-gpt5-vs-claude-opus',
+    title: 'Comparando GPT-5 vs Claude Opus em tarefas de código',
+    excerpt: 'Um comparativo prático entre os dois modelos em cenários reais de desenvolvimento. Esta análise cobre geração, debugging, refatoração e documentação com dados de benchmark reais.',
+    date: '12 jun 2026',
+    tags: ['gpt-5', 'claude', 'code-generation', 'comparativo', 'benchmark'],
+    readingTime: '8 min',
+    frontmatter: {
+      title: '"Comparando GPT-5 vs Claude Opus em tarefas de código"',
+      excerpt: '"Um comparativo prático entre os dois modelos em cenários reais de desenvolvimento."',
+      date: '2026-06-12',
+      tags: ['gpt-5', 'claude', 'code-generation'],
+    }
+  }
+};
+
+const STATE = {
+  variant: 'A',
+  theme: 'dark',
+  terminalOpen: true,
+  fmExpanded: false,
+  treeOpen: { 'frontier-models': true, 'chinese-models': false, 'benchmarks': false, 'cost-performance': false, 'tools-agents': false },
+  sidebarBOpen: false,
+  progress: 62,
+};
+
+function qs(sel, ctx) { return (ctx || document).querySelector(sel); }
+function qsa(sel, ctx) { return Array.from((ctx || document).querySelectorAll(sel)); }
+
+// ═══════════ RENDER ═══════════
+function init() {
+  const params = new URLSearchParams(window.location.search);
+  STATE.variant = params.get('variant') || 'A';
+  STATE.theme = params.get('theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', STATE.theme);
+  render();
+}
+
+function render() {
+  const root = document.getElementById('root');
+  if (STATE.variant === 'A') root.innerHTML = renderVariantA() + renderSwitcher();
+  else if (STATE.variant === 'B') root.innerHTML = renderVariantB() + renderSwitcher();
+  else root.innerHTML = renderVariantC() + renderSwitcher();
+  requestAnimationFrame(() => typeTerminal());
+  requestAnimationFrame(() => animateBars());
+}
+
+// ═══════════ VARIANTS ═══════════
+function renderVariantA() {
+  return `<div class="app">
+    ${titleBar()}
+    <div class="main">
+      ${activityBar()}
+      ${sidebar()}
+      <div class="content-col">
+        ${tabBar()}
+        ${breadcrumbs()}
+        ${documentArea()}
+        ${STATE.terminalOpen ? terminal() : ''}
+      </div>
+    </div>
+    ${statusBar()}
+  </div>`;
+}
+
+function renderVariantB() {
+  const sideOpen = STATE.sidebarBOpen ? ' open' : '';
+  return `<div class="app">
+    ${titleBar()}
+    <div class="main">
+      <div class="sidebar-toggle" onclick="toggleSidebarB()" style="display:flex;align-items:center;justify-content:center;width:32px;cursor:pointer;color:var(--ink-muted);font-size:16px;border-right:1px solid var(--border);flex-shrink:0;transition:color .15s var(--ease-out)">☰</div>
+      <div class="sidebar" style="position:fixed;left:0;top:var(--title-h);bottom:var(--status-h);z-index:50;transform:translateX(-100%);transition:transform .25s var(--ease-out);box-shadow:4px 0 24px rgba(0,0,0,0.4)${sideOpen === ' open' ? ';transform:translateX(0)' : ''}">${sidebarContent()}</div>
+      <div class="content-col">
+        ${tabBar()}
+        ${breadcrumbs()}
+        ${documentArea()}
+      </div>
+    </div>
+    ${STATE.terminalOpen ? `<div class="terminal-panel" style="position:fixed;right:16px;bottom:calc(var(--status-h) + 16px);width:480px;height:260px;border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,0.6);z-index:40">${terminalContent()}</div>` : ''}
+    ${statusBar()}
+  </div>`;
+}
+
+function renderVariantC() {
+  return `<div class="app">
+    ${titleBar()}
+    <div class="main">
+      <div class="activity-bar" style="width:40px">${activityBarIcons()}</div>
+      <div class="sidebar" style="width:260px;border-right:1px solid var(--border);border-left:0">${sidebarContent()}</div>
+      <div style="width:1px;background:var(--border);flex-shrink:0"></div>
+      <div class="content-col" style="min-height:0">
+        <div style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+          ${tabBar()}
+          ${breadcrumbs()}
+          ${documentArea()}
+        </div>
+        ${STATE.terminalOpen ? `<div class="terminal-panel" style="flex-shrink:0;border-top:1px solid var(--border);flex:0 0 40%">${terminalContent(true)}</div>` : ''}
+      </div>
+    </div>
+    ${statusBar()}
+  </div>`;
+}
+
+// ═══════════ COMPONENTS ═══════════
+function titleBar() {
+  const label = `context.log — ${DATA.post.slug}.pt.mdx`;
+  return `<div class="title-bar">
+    <div class="title-dots">
+      <div class="title-dot red"></div>
+      <div class="title-dot yellow"></div>
+      <div class="title-dot green"></div>
+    </div>
+    <div class="title-label">${label}</div>
+    <div class="title-search" onclick="alert('Busca por tags (simulado)')">
+      <span>🔍</span>
+      <span>Buscar por tag...</span>
+      <span class="kbd">⌘K</span>
+    </div>
+  </div>`;
+}
+
+function activityBarIcons() {
+  const themeIcon = STATE.theme === 'dark' ? '☀' : '☾';
+  return `
+    <div class="activity-icon active" title="Explorer">📁</div>
+    <div class="activity-icon" title="Tags">🏷</div>
+    <div class="activity-icon" title="Sobre">ℹ</div>
+    <div class="activity-spacer"></div>
+    <div class="activity-icon" onclick="toggleTheme()" title="Toggle theme">${themeIcon}</div>
+    <div class="activity-icon" title="Idioma: PT" style="font-size:11px;font-weight:600">BR</div>
+    <div class="activity-icon" title="GitHub" onclick="window.open('https://github.com','_blank')" style="font-size:20px"></div>
+    <div class="activity-icon" title="RSS" style="font-size:14px">⎋</div>
+  `;
+}
+
+function activityBar() {
+  return `<div class="activity-bar">${activityBarIcons()}</div>`;
+}
+
+function sidebarContent() {
+  let tree = '';
+  DATA.categories.forEach(cat => {
+    const open = STATE.treeOpen[cat.name] !== false;
+    tree += `<div class="tree-folder">
+      <div class="tree-folder-header" onclick="toggleFolder('${cat.name}')">
+        <span class="arrow ${open ? 'open' : ''}">▶</span>
+        <span class="folder-icon">${open ? '📂' : '📁'}</span>
+        <span class="folder-name">${cat.label}</span>
+      </div>
+      <div class="tree-folder-contents" style="display:${open ? 'block' : 'none'}">
+        ${cat.files.length === 0 ? '<div class="tree-file" style="color:var(--ink-faint);font-size:12px;cursor:default;padding-left:46px">(vazio)</div>' : ''}
+        ${cat.files.map(f => {
+          const active = f === DATA.post.slug + '.mdx' || f === DATA.post.slug;
+          const isPost = !f.endsWith('.mdx') || f === DATA.post.slug + '.mdx';
+          return `<div class="tree-file ${active ? 'active' : ''}">
+            <span class="file-icon">${f.endsWith('.md') ? '📝' : '📄'}</span>
+            <span class="file-name">${f}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  });
+  return `<div class="sidebar-header">
+    <span>EXPLORER</span>
+    <div class="actions">
+      <span title="Collapse folders">▼</span>
+      <span title="More actions">⋯</span>
+    </div>
+  </div>
+  <div class="sidebar-tree">${tree}</div>`;
+}
+
+function sidebar() {
+  return `<div class="sidebar">${sidebarContent()}</div>`;
+}
+
+function tabBar() {
+  const fileIcon = DATA.post.category === 'frontier-models' ? '◇' : '📄';
+  return `<div class="tab-bar">
+    <div class="tab-item active">
+      <span class="icon">${fileIcon}</span>
+      <span>${DATA.post.slug}.pt.mdx</span>
+      <span class="close">✕</span>
+    </div>
+  </div>`;
+}
+
+function breadcrumbs() {
+  return `<div class="breadcrumbs">
+    <span class="breadcrumb-item">context-log</span>
+    <span class="breadcrumb-sep">›</span>
+    <span class="breadcrumb-item">${DATA.post.category}</span>
+    <span class="breadcrumb-sep">›</span>
+    <span class="breadcrumb-item current">${DATA.post.slug}</span>
+    <div class="lang-toggle">
+      <span class="active">pt</span>
+      <span onclick="alert('Versão EN (simulada)')">en</span>
+    </div>
+  </div>`;
+}
+
+function documentArea() {
+  const tags = DATA.post.tags.map(t => `<span class="doc-tag">${t}</span>`).join(' ');
+  const fm = DATA.post.frontmatter;
+  const fmTags = fm.tags.map(t => `<span class="string">"${t}"</span>`).join(', ');
+
+  return `<div class="document-area">
+    <div class="document-content">
+      <!-- Frontmatter block -->
+      <div class="doc-frontmatter">
+        <div class="doc-fm-header" onclick="toggleFm()">
+          <span class="arrow ${STATE.fmExpanded ? 'open' : ''}">▶</span>
+          <span>frontmatter.yaml</span>
+          <span style="margin-left:auto;color:var(--ink-faint)">${STATE.fmExpanded ? 'click to collapse' : 'click to expand'}</span>
+        </div>
+        <div class="doc-fm-body" style="max-height:${STATE.fmExpanded ? '200' : '0'}px">
+          <span class="key">title</span>: <span class="value">${fm.title}</span><br>
+          <span class="key">excerpt</span>: <span class="value">${fm.excerpt}</span><br>
+          <span class="key">date</span>: <span class="value">${fm.date}</span><br>
+          <span class="key">tags</span>: <span class="value">[${fmTags}]</span>
+        </div>
+      </div>
+
+      <!-- CategoryIcon 3D -->
+      <div class="doc-hero-icon">
+        <div class="shape-3d">
+          <div class="face"></div>
+          <div class="face"></div>
+          <div class="face"></div>
+          <div class="face"></div>
+          <div class="face"></div>
+          <div class="face"></div>
+        </div>
+      </div>
+
+      <!-- Title & meta -->
+      <h1 class="doc-title">${DATA.post.title}</h1>
+      <p class="doc-excerpt">${DATA.post.excerpt}</p>
+      <div class="doc-meta">
+        <span>📅 ${DATA.post.date}</span>
+        <span class="doc-meta-sep"></span>
+        <span>📖 ${DATA.post.readingTime} de leitura</span>
+        <span class="doc-meta-sep"></span>
+        <span>⎇ ${DATA.post.category}</span>
+        <span class="doc-meta-sep"></span>
+        ${tags}
+      </div>
+
+      <!-- Body -->
+      <div class="doc-body">
+        <h2>Metodologia</h2>
+        <p>Para este comparativo, selecionei 10 tarefas reais de desenvolvimento divididas em quatro categorias: geração de código, debugging, refatoração e documentação. Cada tarefa foi executada três vezes com cada modelo, temperatura 0.2, e o resultado médio foi registrado.</p>
+
+        <blockquote>Nota: todos os testes foram realizados em junho de 2026, com as versões mais recentes de cada modelo disponíveis via API. Os custos refletem os preços vigentes na data do teste.</blockquote>
+
+        <h3>Geração de Código</h3>
+        <p>Nos testes de geração, o GPT-5 mostrou vantagem significativa em tarefas que exigem raciocínio multi-etapas, enquanto o Claude Opus se destacou na produção de código mais limpo e bem documentado desde a primeira tentativa. A diferença mais marcante foi em tarefas de <code>refatoração</code> complexa, onde o Claude Opus conseguiu preservar melhor a intenção original do código.</p>
+
+        <!-- BenchmarkCard -->
+        <div class="benchmark-card">
+          <div class="image">
+            <div class="chart" id="chart">
+              <div class="bar" style="height:45px;background:hsl(var(--accent-h),var(--accent-s),50%);opacity:0.85" data-h="45"></div>
+              <div class="bar" style="height:62px;background:hsl(var(--accent-h),calc(var(--accent-s)*0.7),55%);opacity:0.85" data-h="62"></div>
+              <div class="bar" style="height:80px;background:hsl(var(--accent-h),calc(var(--accent-s)*0.5),60%);opacity:0.85" data-h="80"></div>
+              <div class="bar" style="height:35px;background:hsl(var(--accent-h),var(--accent-s),50%);opacity:0.6" data-h="35"></div>
+              <div class="bar" style="height:55px;background:hsl(var(--accent-h),calc(var(--accent-s)*0.7),55%);opacity:0.6" data-h="55"></div>
+            </div>
+          </div>
+          <div class="content">
+            <div class="label">Benchmark: MMLU-Pro (0-shot)</div>
+            <p>O DeepSeek ficou surpreendentemente próximo do GPT-5 nesse benchmark, considerando a diferença de custo entre os dois modelos. A margem de 3 pontos percentuais se traduz em uma economia de aproximadamente 12x no custo por token.</p>
+          </div>
+        </div>
+
+        <p>Em termos de custo, considerando a relação preço/token, o Claude Opus oferece aproximadamente 3x mais tokens de saída pelo mesmo valor, o que o torna mais atrativo para tarefas que exigem respostas longas e detalhadas — como documentação e revisão de código extensa.</p>
+
+        <h3>Resultados Consolidados</h3>
+        <p>Compilando os dados de todas as 10 tarefas, temos um cenário onde a escolha do modelo ideal depende fortemente do caso de uso específico. Para tarefas que exigem precisão e documentação, o Claude Opus leva vantagem. Para tarefas que exigem raciocínio complexo e múltiplas iterações, o GPT-5 se destaca.</p>
+
+        <!-- VerdictBox -->
+        <div class="verdict-box positive">
+          <div class="header">
+            <div class="stamp">✓</div>
+            Recomendo — Claude Opus para tarefas de código
+          </div>
+          <div class="body">
+            Considerando a relação custo-benefício e a qualidade consistente do código gerado, o Claude Opus é a recomendação para a maioria dos times de desenvolvimento. O GPT-5 deve ser reservado para tarefas específicas que exigem raciocínio multi-etapas avançado.
+          </div>
+        </div>
+
+        <p>Os resultados completos, incluindo os dados brutos de cada teste e os prompts utilizados, estão disponíveis no <code>repositório</code> do blog. Recomendo que cada equipe execute seus próprios testes com as cargas de trabalho reais do seu contexto antes de tomar uma decisão final.</p>
+      </div>
+    </div>
+  </div>`;
+}
+
+function terminal(detailed) {
+  return `<div class="terminal-panel">${terminalContent(detailed)}</div>`;
+}
+
+function terminalContent(detailed) {
+  const termLines = detailed ? `
+    <div class="terminal-line dim">context.log terminal v0.1.0 — Type 'help' for commands</div>
+    <div class="terminal-line dim" style="margin-bottom:6px">Sistema de arquivos virtual sincronizado com /content</div>
+    <div class="terminal-line output">content/</div>
+    <div class="terminal-line output">├── <span class="dir">frontier-models/</span></div>
+    <div class="terminal-line output">│   └── <span class="highlight-dim">comparando-gpt5-vs-claude-opus/</span></div>
+    <div class="terminal-line output">├── <span class="dir">chinese-models/</span></div>
+    <div class="terminal-line output">│   └── <span class="highlight-dim">deepseek-v4-vale-a-pena/</span></div>
+    <div class="terminal-line output">├── <span class="dir">benchmarks/</span></div>
+    <div class="terminal-line output">├── <span class="dir">cost-performance/</span></div>
+    <div class="terminal-line output">└── <span class="dir">tools-agents/</span></div>
+    <div class="terminal-line output" style="margin-top:4px">context-log:~/content $ <span class="highlight">cd frontier-models</span></div>
+    <div class="terminal-line output">context-log:~/content/frontier-models $ <span class="highlight">ls</span></div>
+    <div class="terminal-line output"><span class="highlight-dim">comparando-gpt5-vs-claude-opus.mdx</span></div>` : `
+    <div class="terminal-line dim">context.log terminal v0.1.0</div>
+    <div class="terminal-line output">content/  <span class="dir">frontier-models/</span>  <span class="dir">chinese-models/</span>  <span class="dir">benchmarks/</span></div>
+    <div class="terminal-line output" style="margin-bottom:4px"></div>
+    <div class="terminal-line prompt"><span class="path">context-log:~/content</span> $ cd <span class="highlight">frontier-models</span></div>
+    <div class="terminal-line output" style="margin-bottom:4px"></div>
+    <div class="terminal-input-line">
+      <span class="prompt-text">context-log:~/content/frontier-models</span>
+      <span style="color:var(--accent)">$</span>
+      <span class="cursor"></span>
+    </div>`;
+
+  return `
+    <div class="terminal-header">
+      <div class="terminal-tabs">
+        <span class="terminal-tab active">bash</span>
+        <span class="terminal-tab">output</span>
+        <span class="terminal-tab">problems</span>
+      </div>
+      <div class="terminal-actions">
+        <span>—</span>
+        <span onclick="toggleTerminal()" style="font-size:14px">${detailed ? '—' : '🗕'}</span>
+      </div>
+    </div>
+    <div class="terminal-body">
+      ${termLines}
+    </div>`;
+}
+
+function statusBar() {
+  return `<div class="status-bar">
+    <div class="progress" style="width:${STATE.progress}%"></div>
+    <div class="status-section"><span class="icon">⎇</span> ${DATA.post.category}</div>
+    <div class="status-section"><span class="icon">●</span> pt</div>
+    <div class="status-section">Markdown</div>
+    <div class="status-spacer"></div>
+    <div class="status-section">Ln 1, Col 1</div>
+    <div class="status-section">UTF-8</div>
+    <div class="status-section">${DATA.post.readingTime}</div>
+    <div class="status-section">${STATE.progress}%</div>
+    <div class="status-section"><span class="status-clickable" onclick="toggleTerminal()" title="Toggle terminal">⌨ Terminal</span></div>
+  </div>`;
+}
+
+function renderSwitcher() {
+  const variantNames = { A: 'VSCode Classic', B: 'Zed Minimal', C: 'Terminal-Centric' };
+  const themeIcon = STATE.theme === 'dark' ? '☀' : '☾';
+  return `<div class="prototype-switcher">
+    <button onclick="cycleVariant(-1)" title="Previous (←)">◀</button>
+    <span class="label">
+      <strong style="color:#fff">${STATE.variant}</strong><span style="color:#666"> — </span>${variantNames[STATE.variant]}
+      <span class="badge">PROTO</span>
+    </span>
+    <button onclick="cycleVariant(1)" title="Next (→)">▶</button>
+    <div class="sep"></div>
+    <button onclick="toggleTheme()" title="Toggle theme">${themeIcon}</button>
+  </div>`;
+}
+
+// ═══════════ ANIMATIONS ═══════════
+function typeTerminal() {
+  const el = qs('.terminal-line.typewriter');
+  if (!el) return;
+  const text = el.textContent;
+  el.textContent = '';
+  el.style.visibility = 'visible';
+  let i = 0;
+  function step() {
+    if (i < text.length) { el.textContent += text[i]; i++; requestAnimationFrame(step); }
+    else { el.style.borderRight = 'none'; }
+  }
+  step();
+}
+
+function animateBars() {
+  qsa('.benchmark-card .bar').forEach(bar => {
+    const target = bar.getAttribute('data-h');
+    if (target) {
+      bar.style.height = '4px';
+      requestAnimationFrame(() => { bar.style.height = target + 'px'; });
+    }
+  });
+}
+
+// ═══════════ ACTIONS ═══════════
+window.toggleTheme = function() {
+  STATE.theme = STATE.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', STATE.theme);
+  updateURL();
+  render();
+};
+
+window.toggleTerminal = function() {
+  STATE.terminalOpen = !STATE.terminalOpen;
+  render();
+};
+
+window.toggleFm = function() {
+  STATE.fmExpanded = !STATE.fmExpanded;
+  render();
+};
+
+window.toggleFolder = function(name) {
+  STATE.treeOpen[name] = !STATE.treeOpen[name];
+  render();
+};
+
+window.toggleSidebarB = function() {
+  STATE.sidebarBOpen = !STATE.sidebarBOpen;
+  const sb = qs('.variant-b .sidebar') || qs('.sidebar');
+  if (sb) sb.style.transform = STATE.sidebarBOpen ? 'translateX(0)' : 'translateX(-100%)';
+};
+
+window.cycleVariant = function(dir) {
+  const variants = ['A','B','C'];
+  const idx = variants.indexOf(STATE.variant);
+  STATE.variant = variants[(idx + dir + 3) % 3];
+  updateURL();
+  render();
+};
+
+function updateURL() {
+  const url = new URL(window.location);
+  url.searchParams.set('variant', STATE.variant);
+  url.searchParams.set('theme', STATE.theme);
+  window.history.pushState({}, '', url);
+}
+
+// ═══════════ KEYBOARD ═══════════
+document.addEventListener('keydown', function(e) {
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable) return;
+  if (e.key === 'ArrowLeft') { e.preventDefault(); cycleVariant(-1); }
+  if (e.key === 'ArrowRight') { e.preventDefault(); cycleVariant(1); }
+});
+
+// ═══════════ EVENTS ═══════════
+window.addEventListener('popstate', init);
+
+init();
+</script>
+</body>
+</html>
