@@ -8,24 +8,24 @@ interface GiscusCommentsProps {
   slug: string
 }
 
-export function GiscusComments({ category, slug }: GiscusCommentsProps) {
+export function GiscusComments(_props: GiscusCommentsProps) {
   const theme = useStore((s) => s.theme)
 
   return (
     <div className="giscus-wrapper" style={{ marginTop: 64, paddingTop: 32, borderTop: '1px solid var(--border)' }}>
       <Giscus
         id="comments"
-        repo="context-log/context-log"
-        repoId=""
+        repo="YuukiFST/context-log"
+        repoId="R_kgDOTA-Vnw"
         category="Announcements"
-        categoryId=""
-        mapping="specific"
-        term={`${category}/${slug}`}
+        categoryId="DIC_kwDOTA-Vn84C_mhE"
+        mapping="pathname"
+        strict="0"
         reactionsEnabled="1"
         emitMetadata="0"
-        inputPosition="top"
-        theme={theme === 'dark' ? 'dark' : 'light'}
-        lang="pt"
+        inputPosition="bottom"
+        theme={theme === 'dark' ? 'dark_tritanopia' : 'light'}
+        lang="en"
         loading="lazy"
       />
     </div>
