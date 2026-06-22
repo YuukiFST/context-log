@@ -32,4 +32,16 @@ These are banned because each was added without the user saying it:
 - O usuário pede pesquisa → você pode incluir dados factuais da pesquisa, mas não crie conclusões ou filosofias sobre eles.
 - Dúvida sobre o que o usuário quis dizer → pergunte. Sempre. Não complete.
 - Se o texto organizado ficou com conteúdo que o usuário claramente não disse, você errou.
+
+## Blog Processing Rules
+
+Quando o usuário enviar texto para ser adicionado ao blog:
+
+- **Corrija** erros gramaticais, redundâncias, acentuação e pontuação.
+- **Organize** o texto da melhor forma possível: divida em seções, títulos e subtítulos quando fizer sentido.
+- **Escolha** o nome das pastas (`content/{categoria}/{slug}/`) de forma organizada e descritiva.
+- **Escolha** um título que seja conciso, descritivo e que represente bem o conteúdo.
+- **Seja minimalista** — sem introduções dramáticas, sem encerramentos floreados.
+- **Defina a categoria** mais adequada com base nas categorias existentes no blog.
+- O texto final deve ser limpo, direto e bem estruturado.
 <!-- END:writing-rules -->
