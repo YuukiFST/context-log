@@ -1,112 +1,54 @@
 ---
 title: "Minha Stack de Economia de Tokens: Caveman, PonyTail, rtk e chrome-devtools-axi"
-excerpt: "Quando se trabalha com LLMs no dia a dia, token não é detalhe — é custo, latência e qualidade de contexto. A stack que uso para manter o sinal alto e o ruído baixo."
+excerpt: "Skills, plugins e ferramentas que uso para economizar tokens no dia a dia com LLMs."
 date: "2026-06-21"
-tags: ["llm", "tokens", "produtividade", "ferramentas", "caveman", "ponytail", "rtk", "chrome-devtools-axi"]
+tags: ["tokens", "produtividade", "ferramentas"]
 ---
 
-Quando se trabalha com LLMs no dia a dia, **token não é detalhe — é custo, latência e qualidade de contexto**. Abaixo, a stack que uso para manter o sinal alto e o ruído baixo.
+## Caveman: Plugin > Skill
 
----
+**Repo:** `JuliusBrussee/caveman`
 
-## 1. Caveman: Plugin > Skill
+O Caveman faz com que o agente responda de maneira mais concisa, economizando tokens. Porém, usar como skill — invocar `/caveman` + pergunta ou `/caveman` na seção — não extrai quase nada do potencial. A economia por ativação não é tão grande assim.
 
-**Repo:** `JuliusBrussee/caveman` (skills)
-
-O Caveman força respostas ultra-concisas, cortando artigos, filler e pleasantries. Economia real: ~75% de tokens na saída.
-
-**Por que plugin, não skill:**
-- Como *skill*, você precisa invocar `/caveman` a cada pergunta ou seção. A economia só acontece quando você lembra de ativar.
-- Como *plugin*, ele roda **em toda e qualquer sessão**, o tempo todo. Não há "esqueci de ativar". O ganho composto é ordens de magnitude maior.
-
-> **Regra prática:** se a ferramenta economiza token *por padrão*, ela deve ser ambient (plugin/hook), não opt-in (skill/comando).
+Eu não uso a skill. Uso o **plugin**, que deixa o Caveman ativo em **todas** as seções o tempo todo, economizando tokens em toda interação.
 
 ---
 
-## 2. PonyTail: Menos AI Slop no Código
+## PonyTail: Menos AI Slop
 
 **Repo:** `DietrichGebert/ponytail`
 
-Modelos geram *AI slop* — código verboso, abstrações desnecessárias, boilerplate "para depois". O PonyTail é um system prompt que impõe uma **escada de preguiça produtiva**:
+Ajuda na economia de tokens em código. Modelos costumam gerar muito *AI slop* — termo para coisas mal feitas por IA. Essa ferramenta faz o código ser escrito de forma mais concisa, economizando tokens.
 
-1. Precisa existir? (YAGNI)
-2. Stdlib resolve?
-3. Feature nativa da plataforma? (`<input type="date">` > date-picker lib)
-4. Dependência já instalada resolve?
-5. Dá pra fazer em uma linha?
-6. Só então: código mínimo que funciona.
+Testes feitos com Haiku 4.5, Sonnet 4.6 e Opus 4.8 mostraram economia de tokens em todos eles. Quanto melhor o modelo, maior a economia. O Opus 4.8 foi o que teve a maior economia.
 
 ---
 
-## 3. rtk: Proxy CLI que Paga-se Sozinho
+## rtk: CLI Proxy
 
 **Repo:** `rtk-ai/rtk`
 
-Um wrapper que intercepta comandos de dev (`vitest`, `tsc`, `pnpm`, `docker`, `kubectl`, `git`, etc.) e **filtra a saída** antes de mandar pro LLM. Redução típica: **60–90% de tokens** no output de ferramentas.
-
-```
-rtk vitest        # 90-99% menos tokens que vitest direto
-rtk tsc           # build output compacto
-rtk git log       # diff/resumo em vez de raw
-```
-
-**Por que não usar?** Não existe motivo. É transparente, zero config, e o ROI é imediato na primeira execução.
+Um CLI Proxy que reduz o consumo de tokens em comandos dev. Na minha visão, não existe motivo para não usá-lo.
 
 ---
 
-## 4. chrome-devtools-axi: Automação de Browser Nativa para Agentes
+## chrome-devtools-axi
 
 **Repo:** `kunchenguid/chrome-devtools-axi`
 
-A maioria dos agents usa `chrome-devtools-mcp` (MCP server bruto). Problema: **~17k tokens só no tool discovery**, snapshots verbosos, uma volta por ação.
+Ferramenta de automação de browser com foco em redução de tokens. Ela usa **TOON encoding** (~40% menos tokens que JSON), **combined operations** (um comando faz navigate + snapshot), **persistent bridge** (Chrome não reinicia a cada chamada), **pipe filtering** (só o que importa volta), **contextual suggestions** (próximos passos inclusos na resposta), e **truncation com escape hatch `--full`**.
 
-O `chrome-devtools-axi` é um **CLI AXI (Agent eXperience Interface)** que wrappa o MCP com 10 princípios de design token-first:
+Benchmarks comparando 7 condições:
 
-| Princípio | Ganho |
-|-----------|-------|
-| **TOON encoding** | ~40% menos tokens que JSON bruto |
-| **Combined operations** | `open` = navigate + snapshot em 1 comando |
-| **Persistent bridge** | Chrome não reinicia a cada chamada |
-| **Pipe filtering** | `\| grep \| head` no shell = só o que importa volta |
-| **Contextual suggestions** | Próximos passos vêm na resposta, sem round-trip |
-| **Truncation com `--full`** | Default compacto, escape hatch quando precisa |
+| Condição | Tokens (input) | Custo/task | Duração | Turns | Sucesso |
+|---|---|---|---|---|---|
+| chrome-devtools-axi | 79.141 | $0.074 | 21.5s | 4.5 | 100% |
+| dev-browser | 82.532 | $0.078 | 28.6s | 4.9 | 99% |
+| agent-browser (Vercel) | 93.074 | $0.088 | 24.6s | 4.8 | 99% |
+| chrome-devtools-mcp (raw) | 184.711 | $0.101 | 26.0s | 6.2 | 99% |
 
-**Benchmarks reais (17 tasks, 7 condições):**
-
-| Condição | Avg Input Tokens | Custo/Task | Duração | Turnos | Sucesso |
-|----------|------------------|------------|---------|--------|---------|
-| **chrome-devtools-axi** | **79,141** | **$0.074** | **21.5s** | **4.5** | **100%** |
-| dev-browser | 82,532 | $0.078 | 28.6s | 4.9 | 99% |
-| agent-browser (Vercel) | 93,074 | $0.088 | 24.6s | 4.8 | 99% |
-| chrome-devtools-mcp (raw) | 184,711 | $0.101 | 26.0s | 6.2 | 99% |
-
-**Resumo:** 57% menos tokens que o MCP bruto, 26% mais barato, 27% menos turnos, **líder simultâneo em todas as 4 métricas**.
-
----
-
-## Resumo da Stack
-
-| Camada | Ferramenta | Onde age | Ganho típico |
-|--------|------------|----------|--------------|
-| **Resposta do modelo** | Caveman (plugin) | Output tokens | ~75% |
-| **Geração de código** | PonyTail | Output tokens | 30–60% (escala com modelo) |
-| **Comandos de dev** | rtk | Tool output tokens | 60–90% |
-| **Browser automation** | chrome-devtools-axi | Input + output tokens | 57% vs MCP raw |
-
-**Filosofia comum:** todas são **ambient/transparent** — instalou, esqueceu, colhe o ganho em *toda* interação. Nenhuma exige "lembrar de usar".
-
----
-
-## Quando NÃO Economizar
-
-Ponytail/Caveman/rtk/axi cortam *ruído*. Não cortam:
-- Validação em trust boundaries
-- Error handling que previne data loss
-- Segurança (authz, sanitização)
-- Acessibilidade básica
-- Qualquer coisa que o usuário pediu explicitamente
-
-> **Lazy ≠ negligente.** Lazy = não escreve o que não precisa ser escrito. O resto, escreve certo.
+chrome-devtools-axi lidera simultaneamente em todas as 4 métricas: 57% menos tokens que o MCP bruto, 26% mais barato, 27% menos turnos.
 
 ---
 
@@ -116,5 +58,3 @@ Ponytail/Caveman/rtk/axi cortam *ruído*. Não cortam:
 - [PonyTail](https://github.com/DietrichGebert/ponytail)
 - [rtk](https://github.com/rtk-ai/rtk)
 - [chrome-devtools-axi](https://github.com/kunchenguid/chrome-devtools-axi)
-- [AXI Design Principles](https://axi.md/)
-- [TOON Format](https://toonformat.dev/)
