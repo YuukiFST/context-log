@@ -1,0 +1,56 @@
+---
+title: "Meu Harness de Config: Claude Code + OpenCode"
+excerpt: "Configuração global para Claude Code e OpenCode — tudo para gastar menos tokens e escrever código melhor."
+date: "2026-06-21"
+tags: ["ferramentas", "produtividade", "configuracao"]
+---
+
+Tenho um repositório de configuração global: `YuukiFST/my-harness-config`. Ele serve tanto para **Claude Code** quanto para **OpenCode** com duas metas: gastar menos tokens, e escrever código melhor.
+
+---
+
+## Economia de Tokens
+
+**rtk** — Um CLI Proxy que comprime a saída de comandos shell antes de chegar no modelo. Um teste de 200 linhas vira ~20 linhas. Usei um hook que reescreve automaticamente todo comando shell nos dois agentes. A redução é de 60-90% menos tokens. Exceção: comandos como `prisma`, `tsc` e `vitest` são corrompidos pelo rtk, então esses executo fora do hook.
+
+**caveman** — Compressão da resposta do agente em ~75%, cortando filler e mantendo o conteúdo técnico. Uso como **plugin**, sempre ativo em toda sessão, nos dois agentes.
+
+**fff** — Busca de arquivos em memória com rankeamento por frequência. É mais rápido e mais barato que spawnar ripgrep ou fzf a cada chamada. Uso como servidor MCP, e o `CLAUDE.md` instrui o agente a preferi-lo.
+
+**code-review-graph** — Grafo Tree-sitter que alimenta o agente apenas com o raio de impacto de uma mudança. Cerca de 82x menos tokens do que ler o repositório inteiro. Uso como servidor MCP com instrução no `CLAUDE.md` para usar antes de Grep/Glob bruto.
+
+**chrome-devtools-axi** — Automação de browser com 57% menos tokens de input e 26% mais barato que o chrome-devtools-mcp puro, graças ao output codificado em TOON. Uso como skill + hooks de SessionStart, e substituiu o servidor `@playwright/mcp`.
+
+---
+
+## Qualidade de Código
+
+**ponytail** — Força disciplina de dev sênior preguiçoso: stdlib ou nativo antes de código customizado. Uma redução de 80-94% menos código. Uso como plugin nos dois agentes.
+
+**no-mistakes** — Portão de validação no push. Roda review, teste e lint numa worktree descartável, auto-corrige slop, e só abre o PR quando está verde. Uso `git push no-mistakes` em vez de `git push origin`.
+
+**superpowers** — Skills de disciplina (brainstorming, debugging, planejamento, verificação) que controlam *como* o agente trabalha. Uso como plugin nos dois agentes.
+
+**goal mode (/goal)** — Ledger de objetivo em arquivo único. Roda um objetivo de ponta a ponta com memória persistente e portões de revisão. No Claude uso o plugin goal-ledger, no OpenCode o `@prevalentware/opencode-goal-plugin`. Mesma funcionalidade, plugin por plataforma.
+
+**skills/** — Minhas skills próprias + curadas: `improve` (auditoria → planos), `claude-md-auditor`, `thermo-nuclear-code-quality-review`, `autoreview`, `grill-me`, `handoff`, entre outras.
+
+---
+
+## Setup Único para Duas Plataformas
+
+O repositório tem instruções drop-in separadas para Claude Code e OpenCode. Basta colar o bloco correspondente como primeira mensagem. Ele detecta o SO, instala só o que aplica à plataforma, e verifica downloads antes de executar.
+
+Os dois agentes recebem o **mesmo** conjunto de ferramentas (rtk, caveman, superpowers, ponytail, code-review-graph, fff, chrome-devtools-axi, no-mistakes, goal mode); só o mecanismo de instalação difere por plataforma.
+
+---
+
+## Filosofia
+
+Nada aqui exige "lembrar de usar". Tudo é ambient: hooks que reescrevem comandos automaticamente, plugins sempre ativos, skills carregadas no início da sessão. O ganho é colhido em toda interação sem esforço consciente. É uma abordagem diferente das skills que você precisa invocar manualmente a cada uso.
+
+---
+
+## Links
+
+- [my-harness-config](https://github.com/YuukiFST/my-harness-config)
